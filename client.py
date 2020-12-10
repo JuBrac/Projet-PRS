@@ -2,7 +2,7 @@
 
 from socket import *
 
-hote = "localhost"
+hote = "10.0.2.15"
 port = 2020
 nomFichier = "input.txt"
 
