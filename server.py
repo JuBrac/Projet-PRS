@@ -1,5 +1,19 @@
 import socket
 import time
+import os
+
+def fragmentationFichier(contenu,nomFichier):
+
+
+    tailleFichier = os.path.getsize(nomFichier)
+    nbSegments = int(tailleFichier/1496)+1
+    arrayFrame = []
+    contenu = '\n'.join(contenu)
+    contenu.encode()
+    for i in range(nbSegments):
+        arrayFrame.append(contenu[:i*1496+1496])
+        arrayFrame[i]= arrayFrame[i].encode()
+    return arrayFrame
 
 # create an INET, STREAMing socket
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -30,13 +44,15 @@ while (continu==True):
                         nomFichier = nomFichier[:nomFichier.find("\x00")]
                         f = open(nomFichier, "r")
                         contenu = f.readlines()
-                        NbSegments = len(contenu)
-                        print(NbSegments);
-                        for i in range(NbSegments):
-                                NumSequence = str(i)
-                                while len(NumSequence) < 6 :
-                                        NumSequence = "0"+NumSequence
-                                message = NumSequence + contenu[i]
+                        listeMessage = fragmentationFichier(contenu,nomFichier)
+                        for i in range(len(listeMessage)):
+                                numSequence = str(i)
+                                while len(numSequence) < 6 :
+                                        numSequence = "0"+numSequence
+                                print(numSequence)
+                                numSequence = numSequence.encode()
+                                message = numSequence + listeMessage[i]
+                                print(message)
                                 socket.sendto(message,address)
                         continu = False
 
@@ -45,3 +61,7 @@ while (continu==True):
 
 print ("Close")
 serversocket.close()
+
+
+
+# fragmentationFichier(contenu,nomFichier)
