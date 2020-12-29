@@ -1,5 +1,5 @@
 # Projet-PRS
-Serveur TCP-over-UDP
+Serveur TCP-over-UDP avec Python 2.7
 
 Implémentations : 
 
