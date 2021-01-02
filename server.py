@@ -3,30 +3,32 @@ import select
 from datetime import datetime
 import os
 
+def lectureFichier(nomFichier):
+    nomFichier = nomFichier.decode("utf-8")
+    nomFichier = nomFichier[:nomFichier.find("\x00")]
+    f = open(nomFichier, "r")
+    contenu = f.read()
+    return contenu,nomFichier
 def fragmentationFichier(contenu,nomFichier):
+
 
 
     tailleFichier = os.path.getsize(nomFichier)
     nbSegments = int(tailleFichier/1494)+1
     arrayFrame = []
-    # contenu = '\n'.join(contenu)
-    contenu = contenu.encode("utf-8")
-
 
     for i in range(nbSegments):
         arrayFrame.append(contenu[i*1494:i*1494+1494])
-
-        # arrayFrame[i]= arrayFrame[i].encode("utf-8")
-        # print(len(arrayFrame[i]))
     return arrayFrame
 
-def lectureFichier(nomFichier):
-    nomFichier = nomFichier.decode("utf-8")
-    # print(nomFichier[:nomFichier.find("\x00")])
-    nomFichier = nomFichier[:nomFichier.find("\x00")]
-    f = open(nomFichier, "r")
-    contenu = f.read()
-    return contenu,nomFichier
+def numeroSequenceByte(index):
+    numSequence = str(index+1)
+    while len(numSequence) < 6 :
+        numSequence = "0"+numSequence
+    numSequenceByte = numSequence.encode("utf-8")
+    return numSequenceByte
+
+
 
 
 # create an INET, STREAMing socket
@@ -47,79 +49,59 @@ while (continu==True):
                 serversocket.sendto(b'SYN-ACK8787',address)
                 ack = serversocket.recv(len("ACK"))
                 if ack == b'ACK':
-                        # t2 = time.perf_counter()
                         t2 = datetime.now()
                         print("ACK recu")
                         rtt = (t2-t1)
                         rtt = rtt.microseconds
-                        # print(type(rtt))
                         print("RTT = ",rtt, "us")
                         socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                         socket.bind(('0.0.0.0', 8787))
                         nomFichier = socket.recv(255)
-                        # socket.setblocking(False)
                         contenu,nomFichier = lectureFichier(nomFichier)
                         listeMessage = fragmentationFichier(contenu,nomFichier)
                         swnd = 16
+                        rto = rtt*5*10**-6
                         numDernierAck = 0
                         i=0
-                        while(i<len(listeMessage)):
+                        while(i<len(listeMessage)): # Tant qu'on n'a pas envoye tout les messages.
                             for j in range(swnd):
-                                numSequence = str(j+1)
-                                while len(numSequence) < 6 :
-                                        numSequence = "0"+numSequence
-                                numSequenceByte = numSequence.encode("utf-8")
-                                # if(i<len(listeMessage)):
-                                message = numSequenceByte + listeMessage[j]
+                                message = numeroSequenceByte(j) + listeMessage[j]
                                 socket.sendto(message,address)
-                                print("SWND:",swnd,i)
-                                print("Num sequence envoye:",numSequence)
+                                # print("SWND:",swnd,i)
+                                # print("Num sequence envoye:",numSequence)
                             i = i+swnd-1
-                            print("i: ",i)
+                            # print("i: ",i)
 
                             ackRecu=0
                             pertePaquet = 0
-                            while(numDernierAck!=len(listeMessage)):
+                            while(numDernierAck!=len(listeMessage)): # Tant que le numero du dernier acquittement n'est pas celui du dernier message.
                                 # print("boucle")
                                 inputs = [socket]
-                                read,write,error = select.select(inputs,[],[],rtt*5*10**-6)
-                                for s in read:
+                                read,write,error = select.select(inputs,[],[],rto)
+                                for s in read: # Si une socket est dispo en lecture.
                                     if s is socket:
                                         data = s.recv(255)
                                         print(data)
-                                        if len(data)!=0:
-                                            data=data.decode()
-                                            data = data[:data.find('\x00')]
-                                            if(int(data[3:])>numDernierAck):
-                                                numDernierAck = int(data[3:])
-                                                print("ACK "+str(numDernierAck)+" recue")
-                                                ackRecu=ackRecu+1
-                                                i = numDernierAck
-                                                numSequence = str(i+1)
-                                                while len(numSequence) < 6 :
-                                                        numSequence = "0"+numSequence
-                                                numSequenceByte = numSequence.encode("utf-8")
-                                                if(i<len(listeMessage)):
-                                                    message = numSequenceByte + listeMessage[i]
-                                                    socket.sendto(message,address)
+                                        # if len(data)!=0:
+                                        data=data.decode()
+                                        data = data[:data.find('\x00')]
+                                        if(int(data[3:])>numDernierAck):
+                                            numDernierAck = int(data[3:])
+                                            print("ACK "+str(numDernierAck)+" recue")
+                                            i = numDernierAck
+                                            if(i<len(listeMessage)):
+                                                message = numeroSequenceByte(i) + listeMessage[i]
+                                                socket.sendto(message,address)
 
 
 
                                 if(len(read)==0):
                                     print("====== Perte de paquet ======")
-                                    # socket.sendto(message,address)
-                                    try:
-                                        numDernierAck = numDernierAck
-                                    except NameError:
-                                        numDernierAck = 0                                    # swnd = 1
+                                    # socket.sendto(message,address)                                  
                                     pertePaquet = 1
                                     i = numDernierAck
-                                    numSequence = str(i+1)
-                                    while len(numSequence) < 6 :
-                                            numSequence = "0"+numSequence
-                                    numSequenceByte = numSequence.encode("utf-8")
                                     if(i<len(listeMessage)):
-                                        message = numSequenceByte + listeMessage[i]
+                                        message = numeroSequenceByte(i) + listeMessage[i]
                                         socket.sendto(message,address)
 
 
