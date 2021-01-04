@@ -52,28 +52,36 @@ while (continu==True):
                         t2 = datetime.now()
                         print("ACK recu")
                         rtt = (t2-t1)
-                        rtt = rtt.microseconds
-                        print("RTT = ",rtt, "us")
+                        rtt = rtt.seconds + rtt.microseconds*10**-6
+                        print("RTT = ",rtt, "s")
                         socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                         socket.bind(('0.0.0.0', 8787))
                         nomFichier = socket.recv(255)
                         contenu,nomFichier = lectureFichier(nomFichier)
                         listeMessage = fragmentationFichier(contenu,nomFichier)
-                        swnd = 16
-                        rto = rtt*5*10**-6
+                        print("taille : ",len(listeMessage))
+
+                        cwnd = 1 #congestion window
+                        swnd = 1 #sliding window
+                        rto = rtt*20
+                        sstresh = 32
+                        # rto = 0.5
                         numDernierAck = 0
+                        messageEnvoi = []
+                        messageRecu = [1]
+                        pertePaquet = 0
                         i=0
+
                         while(i<len(listeMessage)): # Tant qu'on n'a pas envoye tout les messages.
-                            for j in range(swnd):
-                                message = numeroSequenceByte(j) + listeMessage[j]
-                                socket.sendto(message,address)
-                                # print("SWND:",swnd,i)
-                                # print("Num sequence envoye:",numSequence)
+                            message = numeroSequenceByte(i) + listeMessage[i]
+                            socket.sendto(message,address)
+                            messageEnvoi.append(i)
+                            # print("SWND:",swnd,i)
+                            print("Num sequence envoye:",numeroSequenceByte(i))
                             i = i+swnd-1
                             # print("i: ",i)
 
-                            ackRecu=0
-                            pertePaquet = 0
+
                             while(numDernierAck!=len(listeMessage)): # Tant que le numero du dernier acquittement n'est pas celui du dernier message.
                                 # print("boucle")
                                 inputs = [socket]
@@ -88,21 +96,45 @@ while (continu==True):
                                         if(int(data[3:])>numDernierAck):
                                             numDernierAck = int(data[3:])
                                             print("ACK "+str(numDernierAck)+" recue")
+                                            if(numDernierAck not in messageRecu):
+                                                messageRecu.append(numDernierAck)
+
+                                                # messageEnvoi.remove(numDernierAck)
+                                                # messageEnvoi.append(numDernierAck+cwnd,numDernierAck+cwnd+1)
+                                                for k in range(messageRecu[-2],messageRecu[-1]):
+                                                    cwnd = cwnd +1
+                                                    print("cwnd: ",cwnd,"k:",k)
+                                                    indexEnvoi = k+cwnd-1
+                                                    if(indexEnvoi<len(listeMessage)):
+                                                        message = numeroSequenceByte(indexEnvoi) + listeMessage[indexEnvoi]
+                                                        socket.sendto(message,address)
+                                                        print("Envoi: ",indexEnvoi+1)
+
+                                                    indexEnvoi = k+cwnd
+
+                                                    if(indexEnvoi<len(listeMessage)):
+                                                        message = numeroSequenceByte(indexEnvoi) + listeMessage[indexEnvoi]
+                                                        socket.sendto(message,address)
+                                                        print("Envoi: ",indexEnvoi+1)
+
+
                                             i = numDernierAck
-                                            if(i<len(listeMessage)):
-                                                message = numeroSequenceByte(i) + listeMessage[i]
-                                                socket.sendto(message,address)
+                                            # if(i<len(listeMessage)):
+                                            #     message = numeroSequenceByte(i) + listeMessage[i]
+                                            #     socket.sendto(message,address)
 
 
 
                                 if(len(read)==0):
-                                    print("====== Perte de paquet ======")
-                                    # socket.sendto(message,address)                                  
-                                    pertePaquet = 1
+                                    print("--------- Perte de paquet ---------")
+                                    pertePaquet = pertePaquet + 1
+                                    cwnd = 1
+                                    # socket.sendto(message,address)
                                     i = numDernierAck
                                     if(i<len(listeMessage)):
                                         message = numeroSequenceByte(i) + listeMessage[i]
                                         socket.sendto(message,address)
+                                        print("Retransmission ",numeroSequenceByte(i))
 
 
 
@@ -113,14 +145,18 @@ while (continu==True):
 
 
 print ("Close")
+print("|==========================================|")
+print("RTT:",rtt*10**6," us")
 t2 = datetime.now()
 tempsTotal = (t2 - t1)
 tailleFichier = os.path.getsize(nomFichier)
-print(tailleFichier)
-print(tempsTotal.seconds,tempsTotal.microseconds)
+print("Taille totale fichier (en octets):",tailleFichier)
 tempsTotal = tempsTotal.seconds + tempsTotal.microseconds*10**-6
-print(tempsTotal)
-print((tailleFichier/tempsTotal)*10**-3,"Ko/s")
+print("Temps transmission:",tempsTotal)
+print("Debit (Ko/s):",(tailleFichier/tempsTotal)*10**-3,"Ko/s")
+print("Debit (Kb/s):",(tailleFichier/tempsTotal)*10**-3*8,"Kb/s")
+print("Nombre de retransmissions:",pertePaquet)
+print("|==========================================|")
 serversocket.close()
 
 
