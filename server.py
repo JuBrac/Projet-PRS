@@ -167,7 +167,3 @@ resultats = open("resu.csv", "a")
 resultats.write(str(coeffRTO) + ";" + str(cwndwrite) + ";" + str(round((tailleFichier/tempsTotal)*10**-3, 3)) + ";" + str(pertePaquet) + ";" + str(rtt*10**6) + "\n")
 resultats.close()
 serversocket.close()
-
-
-
-# fragmentationFichier(contenu,nomFichier)
