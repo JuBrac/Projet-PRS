@@ -55,7 +55,7 @@ def transmission(address,port) :
         newsocket.sendto(message,address)
         messageEnvoi.append(i)
         # print("SWND:",swnd,i)
-        print("Num sequence envoye:",numeroSequenceByte(i))
+        # print("Num sequence envoye:",numeroSequenceByte(i))
         i = i+swnd-1
         # print("i: ",i)
 
@@ -67,13 +67,13 @@ def transmission(address,port) :
             for s in read: # Si une socket est dispo en lecture.
                 if s is newsocket:
                     data = s.recv(255)
-                    print(data)
+                    # print(data)
                     # if len(data)!=0:
                     data=data.decode()
                     data = data[:data.find('\x00')]
                     if(int(data[3:])>numDernierAck):
                         numDernierAck = int(data[3:])
-                        print("ACK "+str(numDernierAck)+" recue")
+                        # print("ACK "+str(numDernierAck)+" recue")
                         if(numDernierAck not in messageRecu):
                             messageRecu.append(numDernierAck)
 
@@ -81,19 +81,19 @@ def transmission(address,port) :
                             # messageEnvoi.append(numDernierAck+cwnd,numDernierAck+cwnd+1)
                             for k in range(messageRecu[-2],messageRecu[-1]):
                                 cwnd = cwnd +1
-                                print("cwnd: ",cwnd,"k:",k)
+                                # print("cwnd: ",cwnd,"k:",k)
                                 indexEnvoi = k+cwnd-1
                                 if(indexEnvoi<len(listeMessage)):
                                     message = numeroSequenceByte(indexEnvoi) + listeMessage[indexEnvoi]
                                     newsocket.sendto(message,address)
-                                    print("Envoi: ",indexEnvoi+1)
+                                    # print("Envoi: ",indexEnvoi+1)
 
                                 indexEnvoi = k+cwnd
 
                                 if(indexEnvoi<len(listeMessage)):
                                     message = numeroSequenceByte(indexEnvoi) + listeMessage[indexEnvoi]
                                     newsocket.sendto(message,address)
-                                    print("Envoi: ",indexEnvoi+1)
+                                    # print("Envoi: ",indexEnvoi+1)
 
 
                         i = numDernierAck
@@ -104,7 +104,7 @@ def transmission(address,port) :
 
 
             if(len(read)==0):
-                print("--------- Perte de paquet ---------")
+                # print("--------- Perte de paquet ---------")
                 pertePaquet = pertePaquet + 1
                 cwnd = 1
                 # socket.sendto(message,address)
@@ -112,7 +112,7 @@ def transmission(address,port) :
                 if(i<len(listeMessage)):
                     message = numeroSequenceByte(i) + listeMessage[i]
                     newsocket.sendto(message,address)
-                    print("Retransmission ",numeroSequenceByte(i))
+                    # print("Retransmission ",numeroSequenceByte(i))
 
 
     newsocket.sendto(b'FIN',address)
@@ -163,7 +163,7 @@ if __name__ == '__main__':
                 p = Process(target=transmission, args=(address,port))
                 port = port+1
                 p.start()
-                p.join()
+                # p.join()
 
     serversocket.close()
     # fragmentationFichier(contenu,nomFichier)

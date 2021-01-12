@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import socket
 import select
 from datetime import datetime
@@ -65,9 +66,10 @@ while (continu==True):
                     miseEnCache = 0
                     print("taille : ",len(listeMessage))
 
-                    cwnd = 1 #congestion window
+                    cwnd = 10 #congestion window
                     cwndwrite = cwnd
-                    rto = rtt*10   
+                    coeffRTO = 10
+                    rto = rtt*coeffRTO
                     # rto = 0.5
                     numDernierAck = 0
                     messageRecu = [1]
@@ -161,8 +163,8 @@ print("Debit (Ko/s):",(tailleFichier/tempsTotal)*10**-3,"Ko/s")
 print("Debit (Kb/s):",(tailleFichier/tempsTotal)*10**-3*8,"Kb/s")
 print("Nombre de retransmissions:",pertePaquet)
 print("|==========================================|")
-resultats = open("resultats.csv", "a")
-resultats.write(str(rto*10**6) + ";" + str(cwndwrite) + ";" + str(round((tailleFichier/tempsTotal)*10**-3, 3)) + ";" + str(pertePaquet) + ";" + str(rtt*10**6) + "\n")
+resultats = open("resu.csv", "a")
+resultats.write(str(coeffRTO) + ";" + str(cwndwrite) + ";" + str(round((tailleFichier/tempsTotal)*10**-3, 3)) + ";" + str(pertePaquet) + ";" + str(rtt*10**6) + "\n")
 resultats.close()
 serversocket.close()
 
